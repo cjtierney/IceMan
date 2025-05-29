@@ -17,40 +17,58 @@ CURRENT ACTOR INHERITENCE TREE:
 --- Actor ---
 
 init() -> called when object is created (should be placed in constructor)
+
 tick() -> called every game tick
+
 annoyed() -> called when actor becomes annoyed
 
 world_ -> pointer to the active StudentWorld (For if you need to manipulate the world, such as deleting ice)
+
 alive_ -> flag for whether actor is alive. Default set to true. Actor gets deleted when flag is false
 
 
 --- Iceman ---
 
 init() -> sets Iceman to be visible
+
 tick() -> checks for user input and act accordingly
+
 annoyed() ->
 
 addWater() -> adds +5 to water_
+
 addSonar() -> adds +1 to sonar_
+
 addGold() -> adds +1 to gold_
+
 getWater() -> returns water_
+
 getSonar() -> returns sonar_
+
 getGold() -> returns gold_
+
 getHealth() -> returns hp_
+
 abortLevel() -> sets hp_ to 0
+
 squirtWater() ->
 
 
 hp_ -> percent of hp left. Default value is 100
+
 water_ -> number of water squirts held. Default is 10
+
 sonar_ -> number of sonar kits held. Default is 1
+
 gold_ -> number of gold nuggets held. Default is 2
 
 
 --- Ice ---
 
 init() -> sets ice to be visible
+
 tick() -> nothing
+
 annoyed() -> nothing
 
 
@@ -58,7 +76,9 @@ annoyed() -> nothing
 --- Collectable ---
 
 tick() -> sets collectable to be visible when iceman within 4 units. Activates when iceman within 3 units
+
 activate() -> called when item is picked up by Iceman (behavior varies based on child class)
+
 icemanWithinDist(int numUnits) -> used to calculate distance from item to the Iceman
 
 
@@ -66,6 +86,7 @@ icemanWithinDist(int numUnits) -> used to calculate distance from item to the Ic
 --- OilBarrel ---
 
 init() -> sets oil to be invisible
+
 activate() -> sets alive_ flag to false, plays sound effect, increases score by 1000
 
 
