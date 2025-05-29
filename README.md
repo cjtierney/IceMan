@@ -15,6 +15,7 @@ CURRENT ACTOR INHERITENCE TREE:
 ---------- ACTOR ----------
 
 --- Actor ---
+
 init() -> called when object is created (should be placed in constructor)
 tick() -> called every game tick
 annoyed() -> called when actor becomes annoyed
@@ -24,6 +25,7 @@ alive_ -> flag for whether actor is alive. Default set to true. Actor gets delet
 
 
 --- Iceman ---
+
 init() -> sets Iceman to be visible
 tick() -> checks for user input and act accordingly
 annoyed() ->
@@ -46,6 +48,7 @@ gold_ -> number of gold nuggets held. Default is 2
 
 
 --- Ice ---
+
 init() -> sets ice to be visible
 tick() -> nothing
 annoyed() -> nothing
@@ -53,6 +56,7 @@ annoyed() -> nothing
 
 
 --- Collectable ---
+
 tick() -> sets collectable to be visible when iceman within 4 units. Activates when iceman within 3 units
 activate() -> called when item is picked up by Iceman (behavior varies based on child class)
 icemanWithinDist(int numUnits) -> used to calculate distance from item to the Iceman
@@ -60,6 +64,7 @@ icemanWithinDist(int numUnits) -> used to calculate distance from item to the Ic
 
 
 --- OilBarrel ---
+
 init() -> sets oil to be invisible
 activate() -> sets alive_ flag to false, plays sound effect, increases score by 1000
 
