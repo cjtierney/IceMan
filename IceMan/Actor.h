@@ -11,7 +11,7 @@ class Actor : public GraphObject
 {
 public:
 	Actor(int imageID, int startX, int startY, Direction dir, double size, int depth, StudentWorld* w)
-		: GraphObject(imageID, startX, startY, dir, size, depth), world_(w)
+		: GraphObject(imageID, startX, startY, dir, size, depth), world_(w), alive_(true)
 	{
 		//init();
 	}
@@ -20,10 +20,14 @@ public:
 	virtual void tick() = 0;
 	virtual void annoyed() = 0;
 
+	bool isAlive();
+	void setAlive(bool state);
+
 	StudentWorld* getWorld();
 
 private:
 	StudentWorld* world_;
+	bool alive_;
 };
 
 
@@ -52,7 +56,7 @@ class Iceman : public Actor
 {
 public:
 	Iceman(int startX, int startY, StudentWorld* w)
-		: Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w)
+		: Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w), hp_(100), water_(10), gold_(2), sonar_(1)
 	{
 		init();
 	};
@@ -66,6 +70,18 @@ public:
 	void addSonar();
 
 	void addGold();
+
+	void squirtWater();
+
+	void abortLevel();
+
+	int getWater();
+
+	int getSonar();
+	
+	int getGold();
+
+	int getHealth();
 
 private:
 	int hp_;
@@ -131,9 +147,20 @@ private:
 class Collectable : public Actor
 {
 public:
+	Collectable(int imageID, int startX, int startY, StudentWorld* w)
+		: Actor(imageID, startX, startY, right, 1.0, 2, w) {};
+
+	void tick();
+	void annoyed() {};
+
+	virtual void activate() = 0;
+
+	bool icemanWithinDist(int numUnits);
+
+	
+
 
 private:
-
 };
 
 class WaterRefill : public Collectable
@@ -147,6 +174,15 @@ private:
 class OilBarrel : public Collectable
 {
 public:
+	OilBarrel(int startX, int startY, StudentWorld* w)
+		: Collectable(IID_BARREL, startX, startY, w)
+	{
+		init();
+	}
+
+	void init();
+
+	void activate();
 
 private:
 
