@@ -20,7 +20,7 @@ public:
 	virtual void tick() = 0;
 	virtual void annoyed() = 0;
 
-	bool isAlive();
+	bool isAlive() const;
 	void setAlive(bool state);
 
 	StudentWorld* getWorld();

@@ -13,7 +13,7 @@ StudentWorld* Actor::getWorld()
 	return world_;
 }
 
-bool Actor::isAlive()
+bool Actor::isAlive() const
 {
 	return alive_;
 }

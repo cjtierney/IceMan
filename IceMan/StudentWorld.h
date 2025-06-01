@@ -13,8 +13,7 @@
 class StudentWorld : public GameWorld
 {
 public:
-	StudentWorld(std::string assetDir)
-		: GameWorld(assetDir)
+	StudentWorld(std::string assetDir) : GameWorld(assetDir), IcemanPtr(nullptr)
 	{}
 
 	int init() override;

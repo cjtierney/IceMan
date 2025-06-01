@@ -1,5 +1,6 @@
 #include "StudentWorld.h"
 #include <string>
+#include <format>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetDir)
@@ -42,9 +43,10 @@ int StudentWorld::move()
 	{
 		playSound(SOUND_FINISHED_LEVEL);
 		return GWSTATUS_FINISHED_LEVEL;
-	}
-	else if (IcemanPtr->getHealth() <= 0)
-		return GWSTATUS_PLAYER_DIED;
+	} else if (IcemanPtr->getHealth() <= 0) {
+        decLives();
+        return GWSTATUS_PLAYER_DIED;
+    }
 	return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -103,9 +105,7 @@ bool StudentWorld::deleteIce(int x1, int x2, int y1, int y2)
 bool StudentWorld::isIceAt(int x, int y)
 {
 	int icePos = (VIEW_WIDTH * y) + x;
-	if (IceVec[icePos] != nullptr)
-		return true;
-	return false;
+	return IceVec[icePos] != nullptr;
 }
 
 void StudentWorld::populateOilField()
@@ -122,13 +122,13 @@ void StudentWorld::populateOilField()
 		int x = rand() % 61;
 		int y = rand() % 57;
 		bool validPos = true;
-		for (int i = 0; i < ActorVec.size(); i++)
+		for (Actor*& actor : ActorVec)
 		{
-			if (calculateDist(x, y, ActorVec[i]->getX(), ActorVec[i]->getY()) <= 6.0)
+			if (calculateDist(x, y, actor->getX(), actor->getY()) <= 6.0)
 			{
 				validPos = false;
 				cout << "Invalid Pos!" << endl;
-				break;
+                continue;
 			}
 		}
 		if (validPos)
@@ -147,89 +147,35 @@ double StudentWorld::calculateDist(int x1, int y1, int x2, int y2)
 
 void StudentWorld::updateGameStats()
 {
-	int level = getLevel();
-	int lives = getLives();
-	int health = IcemanPtr->getHealth();
-	int water = IcemanPtr->getWater();
-	int gold = IcemanPtr->getGold();
-	int oil = getOilRemaining();
-	int sonar = IcemanPtr->getSonar();
-	int score = getScore();
-
-
 	// Write Display Text
 	string displayText = "";
 
-	if (level <= 9)
-		displayText += ("Lvl:  " + to_string(level));
-	else
-		displayText += ("Lvl: " + to_string(level));
-
-	displayText += (" Lives: " + to_string(lives));
-
-	if (health <= 9)
-		displayText += (" Hlth:   " + to_string(health));
-	else if (health <= 99)
-		displayText += (" Hlth:  " + to_string(health));
-	else
-		displayText += (" Hlth: " + to_string(health));
-
-	if (water <= 9)
-		displayText += ("% Wtr:  " + to_string(water));
-	else
-		displayText += ("% Wtr: " + to_string(water));
-
-	if (gold <= 9)
-		displayText += (" Gld:  " + to_string(gold));
-	else
-		displayText += (" Gld: " + to_string(gold));
-
-	if (oil <= 9)
-		displayText += (" Oil:  " + to_string(oil));
-	else
-		displayText += (" Oil: " + to_string(oil));
-
-	if (sonar <= 9)
-		displayText += (" Sonar:  " + to_string(sonar));
-	else
-		displayText += (" Sonar: " + to_string(sonar));
-
-	if (score <= 9)
-		displayText += (" Scr:      " + to_string(score));
-	else if (score <= 99)
-		displayText += (" Scr:     " + to_string(score));
-	else if (score <= 999)
-		displayText += (" Scr:    " + to_string(score));
-	else if (score <= 9999)
-		displayText += (" Scr:   " + to_string(score));
-	else if (score <= 99999)
-		displayText += (" Scr:  " + to_string(score));
-	else
-		displayText += (" Scr: " + to_string(score));
+	displayText += "Lvl: " + format("{: 2}", getLevel());
+	displayText += " Lives: " + to_string(getLives());
+	displayText += " Hlth: " + format("{: 2}", IcemanPtr->getHealth()) + "%";
+	displayText += " Wtr: " + format("{: 2}", IcemanPtr->getWater());
+	displayText += " Gld: " + format("{: 2}", IcemanPtr->getGold());
+	displayText += " Oil: " + format("{: 2}", getOilRemaining());
+	displayText += " Sonar: " + format("{: 2}", IcemanPtr->getSonar());
+	displayText += " Scr: " + format("{: 6}", getScore());
 
 	setGameStatText(displayText);
 }
 
 void StudentWorld::removeDeadActors()
 {
-	for (int i = 0; i < ActorVec.size(); i++)
-	{
-		if (ActorVec[i]->isAlive() == false)
-		{
-			delete ActorVec[i];
-			ActorVec.erase(ActorVec.begin() + i);
-		}
-	}
+    erase_if(ActorVec, [](Actor* actor) {
+		bool isDead = !actor->isAlive();
+        if (isDead) delete actor;
+        return isDead;
+	});
 }
 
 int StudentWorld::getOilRemaining()
 {
-	int oilCount = 0;
-
-	for (Actor*& actor : ActorVec)
-		if (actor->getID() == IID_BARREL)
-			oilCount++;
-	return oilCount;
+    return count_if(ActorVec.begin(), ActorVec.end(), [](Actor* actor) {
+		return actor->getID() == IID_BARREL;	
+	});
 }
 
 Iceman* StudentWorld::getIceman()
