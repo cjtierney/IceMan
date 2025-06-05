@@ -1,5 +1,6 @@
 #include "Actor.h"
 #include "StudentWorld.h"
+using namespace std;
 
 // Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and StudentWorld.cpp
 
@@ -44,35 +45,51 @@ void Iceman::tick()
 			switch (key)
 			{
 			case KEY_PRESS_UP:
+			case 'w':
+			case 'W':
+			case '8':
 				if(getDirection() != up)
 					setDirection(up);
 				else if (getY() < VIEW_HEIGHT - 4)
 					moveTo(getX(), getY() + 1);
 				break;
 			case KEY_PRESS_DOWN:
+			case 's':
+			case 'S':
+			case '2':
 				if (getDirection() != down)
 					setDirection(down);
 				else if (getY() > 0)
 					moveTo(getX(), getY() - 1);
 				break;
 			case KEY_PRESS_RIGHT:
+			case 'd':
+			case 'D':
+			case '6':
 				if (getDirection() != right)
 					setDirection(right);
 				else if (getX() < VIEW_WIDTH - 4)
 					moveTo(getX() + 1, getY());
 				break;
 			case KEY_PRESS_LEFT:
+			case 'a':
+			case 'A':
+			case '4':
 				if (getDirection() != left)
 					setDirection(left);
 				else if (getX() > 0)
 					moveTo(getX() - 1, getY());
 				break;
 			case KEY_PRESS_SPACE:
+				if(water_ > 0)
+					squirtWater();
 				break;
 			case KEY_PRESS_TAB:
 				break;
 			case 'Z':
 			case 'z':
+				if(sonar_ > 0)
+					useSonar();
 				break;
 			case KEY_PRESS_ESCAPE:
 				abortLevel();
@@ -94,12 +111,22 @@ void Iceman::annoyed()
 
 void Iceman::squirtWater()
 {
+	getWorld()->createWaterSquirt();
 	water_--;
+	getWorld()->playSound(SOUND_PLAYER_SQUIRT);
+}
+
+void Iceman::useSonar()
+{
+	sonar_--;
+	getWorld()->revealGoodies(getX(), getY(), 12);
+	getWorld()->playSound(SOUND_SONAR);
 }
 
 void Iceman::abortLevel()
 {
 	hp_ = 0;
+	setAlive(false);
 }
 
 
@@ -137,6 +164,64 @@ int Iceman::getSonar()
 int Iceman::getHealth()
 {
 	return hp_;
+}
+
+
+
+
+
+// *************************************
+// *********** WATER SQUIRT ************
+// *************************************
+
+void WaterSquirt::init()
+{
+	setVisible(true);
+}
+
+void WaterSquirt::tick()
+{
+	// Check if within radius of 3 of protestors
+	// ...
+
+	if (travelDist_ == 0)
+		setAlive(false);
+	else
+	{
+		Direction dir = getDirection();
+		int x = getX();
+		int y = getY();
+		int targetX = x;
+		int targetY = y;
+		
+		switch (dir)
+		{
+			case up:
+				targetY++;
+				break;
+			case down:
+				targetY--;
+				break;
+			case left:
+				targetX--;
+				break;
+			case right:
+				targetX++;
+				break;
+			default:
+				break;
+		}
+		if (targetX > VIEW_WIDTH-4 || targetX < 0 || targetY > VIEW_HEIGHT-4 || targetY < 0
+			|| getWorld()->isIceAt(targetX, targetY, targetX + 3, targetY + 3))					// Check for Ice
+			// Check for Boulders
+			// ...
+			setAlive(false);
+		else	
+			moveTo(targetX, targetY);
+
+
+		travelDist_--;
+	}
 }
 
 
@@ -181,6 +266,16 @@ void Collectable::tick()
 		{
 			activate();
 		}
+
+		// Remove collectable if lifetime runs out
+		if (lifetime_ > 0)
+		{
+			lifetime_--;
+		}
+		else if (lifetime_ == 0)
+		{
+			setAlive(false);
+		}
 	}
 }
 
@@ -197,6 +292,11 @@ bool Collectable::icemanWithinDist(int numUnits)
 	return false;
 }
 
+void Collectable::setLifetime(int time)
+{
+	lifetime_ = time;
+}
+
 // *************************************
 // **************** OIL ****************
 // *************************************
@@ -204,6 +304,7 @@ bool Collectable::icemanWithinDist(int numUnits)
 void OilBarrel::init()
 {
 	setVisible(false);
+	setLifetime(-1);
 }
 
 void OilBarrel::activate()
@@ -211,4 +312,44 @@ void OilBarrel::activate()
 	setAlive(false);
 	getWorld()->playSound(SOUND_FOUND_OIL);
 	getWorld()->increaseScore(1000);
+}
+
+
+// *************************************
+// ************ WATER POOL *************
+// *************************************
+
+void WaterPool::init() // Need to create common class (same code)
+{
+	setVisible(true);
+	int current_level_num = getWorld()->getLevel();
+	setLifetime(max(100, 300 - 10 * current_level_num));
+}
+
+void WaterPool::activate()
+{
+	setAlive(false);
+	getWorld()->playSound(SOUND_GOT_GOODIE);
+	getWorld()->increaseScore(100);
+	getWorld()->getIceman()->addWater();
+}
+
+
+// *************************************
+// ************* SONAR KIT *************
+// *************************************
+
+void SonarKit::init() // Need to create common class (same code)
+{
+	setVisible(true);
+	int current_level_num = getWorld()->getLevel();
+	setLifetime(max(100, 300 - 10 * current_level_num));
+}
+
+void SonarKit::activate()
+{
+	setAlive(false);
+	getWorld()->playSound(SOUND_GOT_GOODIE);
+	getWorld()->increaseScore(75);
+	getWorld()->getIceman()->addSonar();
 }

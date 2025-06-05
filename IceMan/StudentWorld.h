@@ -33,12 +33,10 @@ public:
 
 	// Checks if there is ice at a given position
 	bool isIceAt(int x, int y);
+	bool isIceAt(int x1, int y1, int x2, int y2);
 
 	// Add collectables to oil field (barrels, gold, boulders)
 	void populateOilField();
-
-	// Return the distance between (x1, y1) and (x2, y2)
-	double calculateDist(int x1, int y1, int x2, int y2);
 
 	// Updates the values in the stats display
 	void updateGameStats();
@@ -46,8 +44,17 @@ public:
 	// Removes any actors marked as dead
 	void removeDeadActors();
 
+	// Attempt to add sonar kits and water pools to the oil field
+	void addGoodies();
+
+	// Sets goodies as visible that are within given radius from center (xc,yc)
+	void revealGoodies(int xc, int yc, int r);
+
 	// Returns the number of oil barrels left
 	int getOilRemaining();
+
+	// Shoots a water squirt from the Iceman's position/direction
+	void createWaterSquirt();
 
 	// Destructor
 	~StudentWorld();

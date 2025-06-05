@@ -56,32 +56,29 @@ class Iceman : public Actor
 {
 public:
 	Iceman(int startX, int startY, StudentWorld* w)
-		: Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w), hp_(100), water_(10), gold_(2), sonar_(1)
+		: Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w), hp_(10), water_(5), gold_(0), sonar_(1)
 	{
 		init();
 	};
 
-	virtual void init();
-	virtual void tick();
-	virtual void annoyed();
+	void init();
+	void tick();
+	void annoyed();
 
 	void addWater();
-
 	void addSonar();
-
 	void addGold();
 
+	int getWater();
+	int getSonar();
+	int getGold();
+	int getHealth();
+
 	void squirtWater();
+	void useSonar();
 
 	void abortLevel();
 
-	int getWater();
-
-	int getSonar();
-	
-	int getGold();
-
-	int getHealth();
 
 private:
 	int hp_;
@@ -95,9 +92,18 @@ private:
 class WaterSquirt : public Actor
 {
 public:
+	WaterSquirt(int startX, int startY, Direction dir, StudentWorld* w)
+		: Actor(IID_WATER_SPURT, startX, startY, dir, 1.0, 1, w), travelDist_(4)
+	{
+		init();
+	};
+
+	void init();
+	void tick();
+	void annoyed() {};
 
 private:
-
+	int travelDist_;
 };
 
 
@@ -107,10 +113,6 @@ class Terrain : public Actor
 public:
 	Terrain(int imageID, int startX, int startY, Direction dir, double size, int depth, StudentWorld* w)
 		: Actor(imageID, startX, startY, dir, size, depth, w) {};
-
-	//virtual void init();
-	//virtual void tick() = 0;
-	//virtual void annoyed() = 0;
 
 private:
 
@@ -148,7 +150,7 @@ class Collectable : public Actor
 {
 public:
 	Collectable(int imageID, int startX, int startY, StudentWorld* w)
-		: Actor(imageID, startX, startY, right, 1.0, 2, w) {};
+		: Actor(imageID, startX, startY, right, 1.0, 2, w), lifetime_(-1) {};
 
 	void tick();
 	void annoyed() {};
@@ -157,18 +159,28 @@ public:
 
 	bool icemanWithinDist(int numUnits);
 
+	void setLifetime(int time);
 	
 
 
 private:
+	int lifetime_;
 };
 
-class WaterRefill : public Collectable
+class WaterPool : public Collectable
 {
 public:
+	WaterPool(int startX, int startY, StudentWorld* w)
+		: Collectable(IID_WATER_POOL, startX, startY, w)
+	{
+		init();
+	}
+
+	void init();
+
+	void activate();
 
 private:
-
 };
 
 class OilBarrel : public Collectable
@@ -199,6 +211,15 @@ private:
 class SonarKit : public Collectable
 {
 public:
+	SonarKit(int startX, int startY, StudentWorld* w)
+		: Collectable(IID_SONAR, startX, startY, w)
+	{
+		init();
+	}
+
+	void init();
+
+	void activate();
 
 private:
 
