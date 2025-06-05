@@ -125,6 +125,7 @@ createIce() -> creates the 64x64 grid of ice
 deleteIce(int x1, int x2, int y1, int y2) -> deletes ice from (x1, y1) to (x2, y2) in a square shape
 
 isIceAt(int x, int y) -> returns true/false whether there is currently ice at the given position (x, y)
+
 isIceAt(int x1, int y1, int x2, int y2) -> returns true if any amount of ice exists within given range, false if no ice at all
 
 populateOilField() -> adds the oil barrels, gold nuggets, and boulders to the ice field
