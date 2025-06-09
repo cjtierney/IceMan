@@ -3,226 +3,208 @@
 
 #include "GraphObject.h"
 
-// Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
+// Students:  Add code to this file, Actor.cpp, StudentWorld.h, and
+// StudentWorld.cpp
 
 class StudentWorld;
 
-class Actor : public GraphObject
-{
-public:
-	Actor(int imageID, int startX, int startY, Direction dir, double size, int depth, StudentWorld* w)
-		: GraphObject(imageID, startX, startY, dir, size, depth), world_(w), alive_(true)
-	{
-		//init();
-	}
+class Actor : public GraphObject {
+   public:
+    Actor(int imageID, int startX, int startY, Direction dir, double size,
+          int depth, StudentWorld* w)
+        : GraphObject(imageID, startX, startY, dir, size, depth),
+          world_(w),
+          alive_(true) {
+        // init();
+    }
 
-	virtual void init() = 0;
-	virtual void tick() = 0;
-	virtual void annoyed() = 0;
+    virtual void init() = 0;
+    virtual void tick() = 0;
+    virtual void annoyed() = 0;
 
-	bool isAlive() const;
-	void setAlive(bool state);
+    bool isAlive() const;
+    void setAlive(bool state);
 
-	StudentWorld* getWorld();
+    StudentWorld* getWorld();
 
-private:
-	StudentWorld* world_;
-	bool alive_;
+   private:
+    StudentWorld* world_;
+    bool alive_;
 };
 
+class Protester : public Actor {
+   public:
+    Protester(int startX, int startY, StudentWorld* w)
+        : Actor(IID_PROTESTER, startX, startY, left, 1.0, 0, w),
+          hp(5),
+          numSquaresToMoveInCurrentDirection(0),
+          leaveTheOilField(false) {
+        init();
+    };
 
+    void init();
+    void tick();
+    void annoyed();
 
+    int getMoveInterval(int level) {
+        return std::max(0, 3 - level / 4);
+    }
 
-class Protestor : public Actor
-{
-public:
-
-private:
-
+   private:
+    int hp;
+    int numSquaresToMoveInCurrentDirection;
+    bool leaveTheOilField;
+    int moveIntervalCounter;
 };
 
-class HardcoreProtestor : public Protestor
-{
-public:
-
-private:
-
+class HardcoreProtester : public Protester {
+   public:
+   private:
 };
 
+class Iceman : public Actor {
+   public:
+    Iceman(int startX, int startY, StudentWorld* w)
+        : Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w),
+          hp_(10),
+          water_(5),
+          gold_(0),
+          sonar_(1) {
+        init();
+    };
 
+    void init();
+    void tick();
+    void annoyed();
 
+    void addWater();
+    void addSonar();
+    void addGold();
 
-class Iceman : public Actor
-{
-public:
-	Iceman(int startX, int startY, StudentWorld* w)
-		: Actor(IID_PLAYER, startX, startY, right, 1.0, 0, w), hp_(10), water_(5), gold_(0), sonar_(1)
-	{
-		init();
-	};
+    int getWater();
+    int getSonar();
+    int getGold();
+    int getHealth();
 
-	void init();
-	void tick();
-	void annoyed();
+    void squirtWater();
+    void useSonar();
 
-	void addWater();
-	void addSonar();
-	void addGold();
+    void abortLevel();
 
-	int getWater();
-	int getSonar();
-	int getGold();
-	int getHealth();
-
-	void squirtWater();
-	void useSonar();
-
-	void abortLevel();
-
-
-private:
-	int hp_;
-	int water_;
-	int sonar_;
-	int gold_;
+   private:
+    int hp_;
+    int water_;
+    int sonar_;
+    int gold_;
 };
 
+class WaterSquirt : public Actor {
+   public:
+    WaterSquirt(int startX, int startY, Direction dir, StudentWorld* w)
+        : Actor(IID_WATER_SPURT, startX, startY, dir, 1.0, 1, w),
+          travelDist_(4) {
+        init();
+    };
 
+    void init();
+    void tick();
+    void annoyed() {};
 
-class WaterSquirt : public Actor
-{
-public:
-	WaterSquirt(int startX, int startY, Direction dir, StudentWorld* w)
-		: Actor(IID_WATER_SPURT, startX, startY, dir, 1.0, 1, w), travelDist_(4)
-	{
-		init();
-	};
-
-	void init();
-	void tick();
-	void annoyed() {};
-
-private:
-	int travelDist_;
+   private:
+    int travelDist_;
 };
 
+class Terrain : public Actor {
+   public:
+    Terrain(int imageID, int startX, int startY, Direction dir, double size,
+            int depth, StudentWorld* w)
+        : Actor(imageID, startX, startY, dir, size, depth, w) {};
 
-
-class Terrain : public Actor
-{
-public:
-	Terrain(int imageID, int startX, int startY, Direction dir, double size, int depth, StudentWorld* w)
-		: Actor(imageID, startX, startY, dir, size, depth, w) {};
-
-private:
-
+   private:
 };
 
-class Ice : public Terrain
-{
-public:
-	Ice(int startX, int startY, StudentWorld* w)
-		: Terrain(IID_ICE, startX, startY, right, 0.25, 3, w)
-	{
-		init();
-	}
+class Ice : public Terrain {
+   public:
+    Ice(int startX, int startY, StudentWorld* w)
+        : Terrain(IID_ICE, startX, startY, right, 0.25, 3, w) {
+        init();
+    }
 
-	void init();
-	void tick();
-	void annoyed();
+    void init();
+    void tick();
+    void annoyed();
 
-private:
-
+   private:
 };
 
-class Boulder : public Terrain
-{
-public:
-
-private:
-
+class Boulder : public Terrain {
+   public:
+   private:
 };
 
+class Collectable : public Actor {
+   public:
+    Collectable(int imageID, int startX, int startY, StudentWorld* w)
+        : Actor(imageID, startX, startY, right, 1.0, 2, w), lifetime_(-1) {};
 
+    void tick();
+    void annoyed() {};
 
+    virtual void activate() = 0;
 
-class Collectable : public Actor
-{
-public:
-	Collectable(int imageID, int startX, int startY, StudentWorld* w)
-		: Actor(imageID, startX, startY, right, 1.0, 2, w), lifetime_(-1) {};
+    bool icemanWithinDist(int numUnits);
 
-	void tick();
-	void annoyed() {};
+    void setLifetime(int time);
 
-	virtual void activate() = 0;
-
-	bool icemanWithinDist(int numUnits);
-
-	void setLifetime(int time);
-	
-
-
-private:
-	int lifetime_;
+   private:
+    int lifetime_;
 };
 
-class WaterPool : public Collectable
-{
-public:
-	WaterPool(int startX, int startY, StudentWorld* w)
-		: Collectable(IID_WATER_POOL, startX, startY, w)
-	{
-		init();
-	}
+class WaterPool : public Collectable {
+   public:
+    WaterPool(int startX, int startY, StudentWorld* w)
+        : Collectable(IID_WATER_POOL, startX, startY, w) {
+        init();
+    }
 
-	void init();
+    void init();
 
-	void activate();
+    void activate();
 
-private:
+   private:
 };
 
-class OilBarrel : public Collectable
-{
-public:
-	OilBarrel(int startX, int startY, StudentWorld* w)
-		: Collectable(IID_BARREL, startX, startY, w)
-	{
-		init();
-	}
+class OilBarrel : public Collectable {
+   public:
+    OilBarrel(int startX, int startY, StudentWorld* w)
+        : Collectable(IID_BARREL, startX, startY, w) {
+        init();
+    }
 
-	void init();
+    void init();
 
-	void activate();
+    void activate();
 
-private:
-
+   private:
 };
 
-class GoldNugget : public Collectable
-{
-public:
-
-private:
-
+class GoldNugget : public Collectable {
+   public:
+   private:
 };
 
-class SonarKit : public Collectable
-{
-public:
-	SonarKit(int startX, int startY, StudentWorld* w)
-		: Collectable(IID_SONAR, startX, startY, w)
-	{
-		init();
-	}
+class SonarKit : public Collectable {
+   public:
+    SonarKit(int startX, int startY, StudentWorld* w)
+        : Collectable(IID_SONAR, startX, startY, w) {
+        init();
+    }
 
-	void init();
+    void init();
 
-	void activate();
+    void activate();
 
-private:
-
+   private:
 };
 
-#endif // ACTOR_H_
+#endif  // ACTOR_H_

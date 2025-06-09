@@ -1,68 +1,84 @@
 #ifndef STUDENTWORLD_H_
 #define STUDENTWORLD_H_
 
-#include "GameWorld.h"
-#include "GameConstants.h"
-#include "Actor.h"
+#include <mutex>
 #include <string>
 #include <vector>
 
+#include "Actor.h"
+#include "GameConstants.h"
+#include "GameWorld.h"
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
-class StudentWorld : public GameWorld
-{
-public:
-	StudentWorld(std::string assetDir) : GameWorld(assetDir), IcemanPtr(nullptr)
-	{}
+class WorldExitPath;
 
-	int init() override;
-	
-	int move() override;
+class StudentWorld : public GameWorld {
+   public:
+    StudentWorld(std::string assetDir)
+        : GameWorld(assetDir), IcemanPtr(nullptr), ExitPathGenerator(nullptr) {}
 
-	void cleanUp() override;
+    int init() override;
 
-	Iceman* getIceman();
+    int move() override;
 
+    void cleanUp() override;
 
-	// creates the initial 64 by 64 ice grid with a pit
-	void createIce();
+    Iceman* getIceman();
 
-	// Delete ice in a _ by _ area, returns true if ice deleted
-	bool deleteIce(int x1, int x2, int y1, int y2);
+    // creates the initial 64 by 64 ice grid with a pit
+    void createIce();
 
-	// Checks if there is ice at a given position
-	bool isIceAt(int x, int y);
-	bool isIceAt(int x1, int y1, int x2, int y2);
+    // Delete ice in a _ by _ area, returns true if ice deleted
+    bool deleteIce(int x1, int x2, int y1, int y2);
 
-	// Add collectables to oil field (barrels, gold, boulders)
-	void populateOilField();
+    // Checks if there is ice at a given position
+    bool isIceAt(int x, int y);
+    bool isIceAt(int x1, int y1, int x2, int y2);
 
-	// Updates the values in the stats display
-	void updateGameStats();
+    // Add collectables to oil field (barrels, gold, boulders)
+    void populateOilField();
 
-	// Removes any actors marked as dead
-	void removeDeadActors();
+    // Updates the values in the stats display
+    void updateGameStats();
 
-	// Attempt to add sonar kits and water pools to the oil field
-	void addGoodies();
+    // Removes any actors marked as dead
+    void removeDeadActors();
 
-	// Sets goodies as visible that are within given radius from center (xc,yc)
-	void revealGoodies(int xc, int yc, int r);
+    // Attempt to add sonar kits and water pools to the oil field
+    void addGoodies();
 
-	// Returns the number of oil barrels left
-	int getOilRemaining();
+    // Sets goodies as visible that are within given radius from center (xc,yc)
+    void revealGoodies(int xc, int yc, int r);
 
-	// Shoots a water squirt from the Iceman's position/direction
-	void createWaterSquirt();
+    // Returns the number of oil barrels left
+    int getOilRemaining();
 
-	// Destructor
-	~StudentWorld();
+    // Shoots a water squirt from the Iceman's position/direction
+    void createWaterSquirt();
 
-private:
-	std::vector<Actor*> ActorVec;	// Includes all Actors (besides ice and iceman)
-	std::vector<Ice*> IceVec;		// Includes all Ice objects
-	Iceman* IcemanPtr;				// Includes the Iceman player
+    // Destructor
+    ~StudentWorld();
+
+    WorldExitPath* ExitPathGenerator;
+
+   private:
+    std::vector<Actor*> ActorVec;  // Includes all Actors (besides ice and iceman)
+    std::vector<Ice*> IceVec;  // Includes all Ice objects
+    Iceman* IcemanPtr;         // Includes the Iceman player
 };
 
-#endif // STUDENTWORLD_H_
+class WorldExitPath {
+   public:
+    WorldExitPath() : directions(std::vector<direction>()), lock(std::make_unique<std::mutex>()) {}
+
+    enum direction { up, down, left, right, is_exit, none, unresolved };
+    direction getNextDirection(int x, int y);
+    void calulateDirections(StudentWorld* world);
+
+   private:
+    std::vector<direction> directions;
+    std::unique_ptr<std::mutex> lock;
+};
+
+#endif  // STUDENTWORLD_H_
