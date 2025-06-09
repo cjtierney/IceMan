@@ -136,9 +136,9 @@ void Iceman::tick() {
                     break;
             }
             // Mine Ice
-            if (getWorld()->deleteIce(
+            if (getWorld()->getIceHolder()->deleteIce(
                     getX(), getX() + 3, getY(),
-                    getY() + 3))  // try to dig 4x4 area of ice
+                    getY() + 3, true))  // try to dig 4x4 area of ice
                 getWorld()->playSound(SOUND_DIG);
         }
     }
@@ -230,8 +230,8 @@ void WaterSquirt::tick() {
         }
         if (targetX > VIEW_WIDTH - 4 || targetX < 0 ||
             targetY > VIEW_HEIGHT - 4 || targetY < 0 ||
-            getWorld()->isIceAt(targetX, targetY, targetX + 3,
-                                targetY + 3))  // Check for Ice
+            getWorld()->getIceHolder()->isIceAt(targetX, targetY, targetX + 3,
+                                targetY + 3, true))  // Check for Ice
             // Check for Boulders
             // ...
             setAlive(false);
