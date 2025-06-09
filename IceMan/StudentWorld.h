@@ -72,7 +72,7 @@ class WorldExitPath {
    public:
     WorldExitPath() : directions(std::vector<direction>()), lock(std::make_unique<std::mutex>()) {}
 
-    enum direction { up, down, left, right, is_exit, none, unresolved };
+    enum direction { up, down, left, right, is_exit, none, unresolved, resolving };
     direction getNextDirection(int x, int y);
     void calulateDirections(StudentWorld* world);
 

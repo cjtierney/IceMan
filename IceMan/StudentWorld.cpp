@@ -35,11 +35,6 @@ int StudentWorld::move() {
     // return GWSTATUS_PLAYER_DIED;
 
     ExitPathGenerator->calulateDirections(this);
-    WorldExitPath::direction dir = ExitPathGenerator->getNextDirection(
-        IcemanPtr->getX(), IcemanPtr->getY());
-    // this should tell you the best path to follow to get to (60, 60) from the Iceman's current position
-    cout << "next direction: " << dir << '(' << std::to_string(dir) << ") "
-         << endl;
 
     for (Actor* actor : ActorVec) actor->tick();
 
@@ -126,11 +121,7 @@ bool StudentWorld::isIceAt(int x1, int y1, int x2, int y2) {
     assert(y2 < VIEW_HEIGHT);
     for (int y = y1; y <= y2; y++)
         for (int x = x1; x <= x2; x++) {
-            int icePos = (VIEW_WIDTH * y) + x;
-            if (icePos < VIEW_WIDTH * VIEW_HEIGHT)
-                if (IceVec[icePos] != nullptr) {
-                    return true;
-                }
+            if (IceVec[(VIEW_WIDTH * y) + x] != nullptr) return true;
         }
     return false;
 }
@@ -264,16 +255,6 @@ struct position {
     }
 };
 
-template <class T>
-class MyHash;
-
-template <>
-struct MyHash<position> {
-    size_t operator()(const position& p) const {
-        return (size_t)(p.x ^ p.y);
-    }
-};
-
 vector<tuple<position, WorldExitPath::direction>> getAdjacent(position p) {
     vector<tuple<position, WorldExitPath::direction>> res(4);
     if (p.x > 0)
@@ -288,15 +269,10 @@ vector<tuple<position, WorldExitPath::direction>> getAdjacent(position p) {
 }
 
 void WorldExitPath::calulateDirections(StudentWorld* world) {
-    vector<direction> newDirections(VIEW_WIDTH * VIEW_HEIGHT);
-    for (int i = 0; i < VIEW_WIDTH * VIEW_HEIGHT; i++)
-        newDirections.push_back(direction::unresolved);
+    vector<direction> newDirections(VIEW_WIDTH * VIEW_HEIGHT, direction::unresolved);
     newDirections[VIEW_WIDTH * 60 + 60] = direction::is_exit;
 
-    unordered_set<position, MyHash<position>> positions;
     queue<position> positionQueue;
-
-    positions.insert(position(60, 60));
     for (tuple<position, direction> pos : getAdjacent(position(60, 60)))
         positionQueue.push(get<0>(pos));
 
@@ -306,14 +282,14 @@ outer_loop:
         positionQueue.pop();
         if (world->isIceAt(pos.x, pos.y, pos.x + 3, pos.y + 3)) {
             newDirections[VIEW_WIDTH * pos.y + pos.x] = direction::none;
-            positions.insert(pos);
             continue;
         }
         vector<tuple<position, direction>> adjacent = getAdjacent(pos);
         for (tuple<position, direction> adj : adjacent) {
             position adjPos = get<0>(adj);
-            if (!positions.contains(adjPos)) {
-                positions.insert(adjPos);
+            int adjIndex = VIEW_WIDTH * adjPos.y + adjPos.x;
+            if (newDirections[adjIndex] == direction::unresolved) {
+                newDirections[adjIndex] = direction::resolving;
                 positionQueue.push(adjPos);
             }
         }
@@ -321,11 +297,8 @@ outer_loop:
             position testPos = get<0>(testPosDir);
             direction testDir =
                 newDirections[VIEW_WIDTH * testPos.y + testPos.x];
-            if (testDir == direction::unresolved) {
-                positionQueue.push(testPos);
-            } else if (testDir != direction::none) {
+            if (testDir != direction::none && testDir != direction::unresolved && testDir != direction::resolving) {
                 newDirections[VIEW_WIDTH * pos.y + pos.x] = get<1>(testPosDir);
-                positions.insert(pos);
                 // C++ doesn't have named loops and I don't want to have to deal
                 // with function scopes
                 goto outer_loop;
