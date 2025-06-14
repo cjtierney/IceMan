@@ -11,9 +11,6 @@ GameWorld* createStudentWorld(string assetDir) {
     return new StudentWorld(assetDir);
 }
 
-// Students:  Add code to this file (if you wish), StudentWorld.h, Actor.h and
-// Actor.cpp
-
 int StudentWorld::init() {
     srand(time(0));
 
@@ -28,11 +25,6 @@ int StudentWorld::init() {
 }
 
 int StudentWorld::move() {
-    // This code is here merely to allow the game to build, run, and terminate
-    // after you hit enter a few times. Notice that the return value
-    // GWSTATUS_PLAYER_DIED will cause our framework to end the current level.
-    // decLives();
-    // return GWSTATUS_PLAYER_DIED;
 
     ExitPathGenerator->calulateDirections();
 
@@ -76,8 +68,10 @@ void StudentWorld::populateOilField() {
     int oilCount = min(2 + currentLevel / 2, 21);
 
     while (oilCount > 0) {
-        int x = rand() % 61;
-        int y = rand() % 57;
+        int x = rand() % 61;    // x = 0-60
+        int y = rand() % 57;    // y = 0-56
+        if (x >= 27 && x <= 33 && y >= 1 && y <= 59) // don't generate in pit
+            continue;
         bool validPos = true;
         for (Actor*& actor : ActorVec) {
             if (hypot(x - actor->getX(), y - actor->getY()) <= 6.0) {
@@ -92,10 +86,47 @@ void StudentWorld::populateOilField() {
     }
 
     // CREATE GOLD NUGGETS
-    // ...
+    int goldCount = max(5 - currentLevel / 2, 2);
+
+    while (goldCount > 0) {
+        int x = rand() % 61;    // x = 0-60
+        int y = rand() % 57;    // y = 0-56
+        if (x >= 27 && x <= 33 && y >= 1 && y <= 59) // don't generate in pit
+            continue;
+        bool validPos = true;
+        for (Actor*& actor : ActorVec) {
+            if (hypot(x - actor->getX(), y - actor->getY()) <= 6.0) {
+                validPos = false;
+                break;  // If one fails, no need to check the rest
+            }
+        }
+        if (validPos) {
+            ActorVec.push_back(new GoldNugget(x, y, true, this));
+            goldCount--;
+        }
+    }
 
     // CREATE BOULDERS
-    //  ...
+    int boulderCount = min(currentLevel / 2 + 2, 9);
+
+    while (boulderCount > 0) {
+        int x = rand() % 61;         // x = 0-60
+        int y = (rand() % 37) + 20;  // y = 20-56
+        if (x >= 27 && x <= 33 && y >= 1 && y <= 59) // don't generate in pit
+            continue;
+        bool validPos = true;
+        for (Actor*& actor : ActorVec) {
+            if (hypot(x - actor->getX(), y - actor->getY()) <= 6.0) {
+                validPos = false;
+                break;  // If one fails, no need to check the rest
+            }
+        }
+        if (validPos) {
+            getIceHolder()->deleteIce(x, y, x + 3, y + 3, false);
+            ActorVec.push_back(new Boulder(x, y, this));
+            boulderCount--;
+        }
+    }
 }
 
 void StudentWorld::addGoodies() {
@@ -133,9 +164,12 @@ void StudentWorld::revealGoodies(int xc, int yc, int r) {
     }
 }
 
-void StudentWorld::createWaterSquirt() {
-    ActorVec.push_back(new WaterSquirt(IcemanPtr->getX(), IcemanPtr->getY(),
-                                       IcemanPtr->getDirection(), this));
+void StudentWorld::createWaterSquirt(int x, int y) {
+    ActorVec.push_back(new WaterSquirt(x, y, IcemanPtr->getDirection(), this));
+}
+
+void StudentWorld::dropGold(int x, int y) {
+    ActorVec.push_back(new GoldNugget(x, y, false, this));
 }
 
 void StudentWorld::updateGameStats() {
@@ -145,7 +179,7 @@ void StudentWorld::updateGameStats() {
     displayText += "Lvl: " + format("{:2}", getLevel());
     displayText += " Lives: " + to_string(getLives());
     displayText +=
-        " Hlth: " + format("{:3}", IcemanPtr->getHealth() * 10) + "%";
+        " Hlth: " + format("{:3}", IcemanPtr->getHP() * 10) + "%";
     displayText += " Wtr: " + format("{:2}", IcemanPtr->getWater());
     displayText += " Gld: " + format("{:2}", IcemanPtr->getGold());
     displayText += " Oil: " + format("{:2}", getOilRemaining());
@@ -166,6 +200,45 @@ void StudentWorld::removeDeadActors() {
 int StudentWorld::getOilRemaining() {
     return count_if(ActorVec.begin(), ActorVec.end(),
                     [](Actor* actor) { return actor->getID() == IID_BARREL; });
+}
+
+bool StudentWorld::isActorNearby(int actorID, int xc, int yc, double rMin, double rMax) {
+    for (Actor*& actor : ActorVec) {
+        int id = actor->getID();
+        if (id == actorID)
+        {
+            int x = actor->getX();
+            int y = actor->getY();
+            double r = hypot(xc - x, yc - y);
+            if (r >= rMin && r <= rMax)
+                return true;
+        }
+    }
+    return false;
+}
+
+bool StudentWorld::icemanWithinDist(int xc, int yc, int r) {
+    if (hypot(xc - IcemanPtr->getX(), yc - IcemanPtr->getY()) <= r)
+        return true;
+    return false;
+}
+
+bool StudentWorld::damageNearbyProtesters(int xc, int yc, int r, int dmg)
+{
+    int res = false;
+    for (Actor*& actor : ActorVec) {
+        int id = actor->getID();
+        if (id == IID_PROTESTER || id == IID_HARD_CORE_PROTESTER)
+        {
+            int x = actor->getX();
+            int y = actor->getY();
+            if (hypot(xc - x, yc - y) <= r) {
+                actor->annoyed(dmg);
+                res = true;
+            }
+        }
+    }
+    return res;
 }
 
 IceHolder* StudentWorld::getIceHolder() {
@@ -195,7 +268,7 @@ void IceHolder::createIce(StudentWorld* world) {
         }
 }
 
-bool IceHolder::deleteIce(int x1, int x2, int y1, int y2, bool shouldLock) {
+bool IceHolder::deleteIce(int x1, int y1, int x2, int y2, bool shouldLock) {
     if (shouldLock) lock();
     bool iceDeleted = false;
     for (int y = y1; y <= y2; y++) {

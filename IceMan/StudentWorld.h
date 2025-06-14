@@ -9,7 +9,6 @@
 #include "GameConstants.h"
 #include "GameWorld.h"
 
-// Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
 class WorldExitPath;
 class IceHolder;
@@ -48,7 +47,19 @@ class StudentWorld : public GameWorld {
     int getOilRemaining();
 
     // Shoots a water squirt from the Iceman's position/direction
-    void createWaterSquirt();
+    void createWaterSquirt(int x, int y);
+
+    // Shoots a water squirt from the Iceman's position/direction
+    void dropGold(int x, int y);
+
+    // Checks if a specific Actor is within a radius of rMin to rMax from (xc,yc)
+    bool isActorNearby(int actorID, int xc, int yc, double rMin, double rMax);
+
+    // Checks if the iceman is within a radius of r from (xc,yc)
+    bool icemanWithinDist(int xc, int yc, int r);
+
+    // Attempts to damage Protesters in a radius of r around (xc,yc) for dmg damage
+    bool damageNearbyProtesters(int xc, int yc, int r, int dmg);
 
     // Destructor
     ~StudentWorld();
@@ -69,8 +80,8 @@ class IceHolder {
     // creates the initial 64 by 64 ice grid with a pit
     void createIce(StudentWorld* world);
 
-    // Delete ice in a _ by _ area, returns true if ice deleted
-    bool deleteIce(int x1, int x2, int y1, int y2, bool shouldLock);
+    // Delete ice from (x1,y1) to (x2,y2)
+    bool deleteIce(int x1, int y1, int x2, int y2, bool shouldLock);
 
     // Checks if there is ice at a given position
     bool isIceAt(int x, int y, bool shouldLock);

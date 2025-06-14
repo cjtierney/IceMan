@@ -5,9 +5,6 @@
 #include "StudentWorld.h"
 using namespace std;
 
-// Students:  Add code to this file (if you wish), Actor.h, StudentWorld.h, and
-// StudentWorld.cpp
-
 // *************************************
 // ************** ACTOR ***************
 // *************************************
@@ -24,6 +21,19 @@ void Actor::setAlive(bool state) {
     alive_ = state;
 }
 
+
+// *************************************
+// ************** PERSON ***************
+// *************************************
+
+int Person::getHP() {
+    return hp_;
+}
+
+void Person::subtractHP(int dmg) {
+    hp_ -= dmg;
+}
+
 // *************************************
 // ************ PROTESTORS *************
 // *************************************
@@ -33,11 +43,11 @@ void Protester::init() {
 }
 
 void Protester::tick() {
-    int moveInterval = getMoveInterval(getWorld()->getLevel());
-    moveIntervalCounter = ++moveIntervalCounter % moveInterval;
+    int moveInterval = getMoveInterval();
+    moveIntervalCounter_ = ++moveIntervalCounter_ % moveInterval;
     if (!isAlive()) return;
-    if (moveIntervalCounter != 0) return;
-    if (leaveTheOilField) {
+    if (moveIntervalCounter_ != 0) return;
+    if (leaveTheOilField_) {
         if (getX() == 60 && getY() == 0) {
             setAlive(false);
             return;
@@ -67,7 +77,21 @@ void Protester::tick() {
     }
 }
 
-void Protester::annoyed() {}
+void Protester::annoyed(int dmg) {
+    if (dmg == 0) { // Bribe
+        leaveTheOilField_ = true;
+    }
+        
+    else // Take damage
+        subtractHP(dmg);
+    //...
+}
+
+
+int Protester::getMoveInterval() {
+    int level = getWorld()->getLevel();
+    return std::max(0, 3 - level / 4);
+}
 
 // *************************************
 // ************** ICEMAN ***************
@@ -78,52 +102,63 @@ void Iceman::init() {
 }
 
 void Iceman::tick() {
-    if (hp_ == 0)
+    if (getHP() <= 0)
+    {
+        setAlive(false);
+        getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
         return;
+    }
     else {
         int key;
         if (getWorld()->getKey(key) == true) {
+            int targX = getX();
+            int targY = getY();
             switch (key) {
                 case KEY_PRESS_UP:
                 case 'w':
                 case 'W':
                 case '8':
+                    targY++;
                     if (getDirection() != up)
                         setDirection(up);
-                    else if (getY() < VIEW_HEIGHT - 4)
-                        moveTo(getX(), getY() + 1);
+                    else if (targY <= VIEW_HEIGHT - 4 && !getWorld()->isActorNearby(IID_BOULDER, targX, targY, 0, 3))
+                        moveTo(targX, targY);
                     break;
                 case KEY_PRESS_DOWN:
                 case 's':
                 case 'S':
                 case '2':
+                    targY--;
                     if (getDirection() != down)
                         setDirection(down);
-                    else if (getY() > 0)
-                        moveTo(getX(), getY() - 1);
+                    else if (targY >= 0 && !getWorld()->isActorNearby(IID_BOULDER, targX, targY, 0, 3))
+                        moveTo(targX, targY);
                     break;
                 case KEY_PRESS_RIGHT:
                 case 'd':
                 case 'D':
                 case '6':
+                    targX++;
                     if (getDirection() != right)
                         setDirection(right);
-                    else if (getX() < VIEW_WIDTH - 4)
-                        moveTo(getX() + 1, getY());
+                    else if (targX <= VIEW_WIDTH - 4 && !getWorld()->isActorNearby(IID_BOULDER, targX, targY, 0, 3))
+                        moveTo(targX, targY);
                     break;
                 case KEY_PRESS_LEFT:
                 case 'a':
                 case 'A':
                 case '4':
+                    targX--;
                     if (getDirection() != left)
                         setDirection(left);
-                    else if (getX() > 0)
-                        moveTo(getX() - 1, getY());
+                    else if (targX >= 0 && !getWorld()->isActorNearby(IID_BOULDER, targX, targY, 0, 3))
+                        moveTo(targX, targY);
                     break;
                 case KEY_PRESS_SPACE:
                     if (water_ > 0) squirtWater();
                     break;
                 case KEY_PRESS_TAB:
+                    if (gold_ > 0) dropGold();
                     break;
                 case 'Z':
                 case 'z':
@@ -137,19 +172,56 @@ void Iceman::tick() {
             }
             // Mine Ice
             if (getWorld()->getIceHolder()->deleteIce(
-                    getX(), getX() + 3, getY(),
-                    getY() + 3, true))  // try to dig 4x4 area of ice
+                    getX(), getY(), getX() + 3, getY() + 3, true))  // try to dig 4x4 area of ice
                 getWorld()->playSound(SOUND_DIG);
         }
     }
 }
 
-void Iceman::annoyed() {}
+void Iceman::annoyed(int dmg) {
+    subtractHP(dmg);
+    if (getHP() <= 0) {
+        setAlive(false);
+        getWorld()->playSound(SOUND_PLAYER_GIVE_UP);
+    }
+}
 
 void Iceman::squirtWater() {
-    getWorld()->createWaterSquirt();
+    int dir = getDirection();
+    int x = getX();
+    int y = getY();
+    switch (dir) {
+        case up:
+            y += 4;
+            break;
+        case down:
+            y -= 4;
+            break;
+        case right:
+            x += 4;
+            break;
+        case left:
+            x -= 4;
+            break;
+    }
+
+    if (x < 0 || x >= VIEW_WIDTH || y < 0 || y >= VIEW_HEIGHT
+        || getWorld()->getIceHolder()->isIceAt(x, y, x + 3, y + 3, true)
+        || getWorld()->isActorNearby(IID_BOULDER, x, y, 0, 3))
+    {
+        cout << "fail: " << x << y << endl;
+    }
+    else
+        getWorld()->createWaterSquirt(x, y);
+
     water_--;
     getWorld()->playSound(SOUND_PLAYER_SQUIRT);
+}
+
+void Iceman::dropGold()
+{
+    gold_--;
+    getWorld()->dropGold(getX(), getY());
 }
 
 void Iceman::useSonar() {
@@ -159,7 +231,7 @@ void Iceman::useSonar() {
 }
 
 void Iceman::abortLevel() {
-    hp_ = 0;
+    subtractHP(getHP());
     setAlive(false);
 }
 
@@ -187,10 +259,6 @@ int Iceman::getSonar() {
     return sonar_;
 }
 
-int Iceman::getHealth() {
-    return hp_;
-}
-
 // *************************************
 // *********** WATER SQUIRT ************
 // *************************************
@@ -200,11 +268,10 @@ void WaterSquirt::init() {
 }
 
 void WaterSquirt::tick() {
-    // Check if within radius of 3 of protestors
-    // ...
-
-    if (travelDist_ == 0)
+    if (travelDist_ == 0) {
         setAlive(false);
+        return;
+    }
     else {
         Direction dir = getDirection();
         int x = getX();
@@ -213,46 +280,94 @@ void WaterSquirt::tick() {
         int targetY = y;
 
         switch (dir) {
-            case up:
-                targetY++;
-                break;
-            case down:
-                targetY--;
-                break;
-            case left:
-                targetX--;
-                break;
-            case right:
-                targetX++;
-                break;
-            default:
-                break;
+        case up:
+            targetY++;
+            break;
+        case down:
+            targetY--;
+            break;
+        case left:
+            targetX--;
+            break;
+        case right:
+            targetX++;
+            break;
+        default:
+            break;
         }
+
         if (targetX > VIEW_WIDTH - 4 || targetX < 0 ||
             targetY > VIEW_HEIGHT - 4 || targetY < 0 ||
-            getWorld()->getIceHolder()->isIceAt(targetX, targetY, targetX + 3,
-                                targetY + 3, true))  // Check for Ice
-            // Check for Boulders
-            // ...
+            getWorld()->getIceHolder()->isIceAt(targetX, targetY, targetX + 3, targetY + 3, true)
+            || getWorld()->isActorNearby(IID_BOULDER, x, y, 0, 3)) {
             setAlive(false);
-        else
-            moveTo(targetX, targetY);
+            return;
+        }
+        if (getWorld()->damageNearbyProtesters(x, y, 3, 2)) {
+            setAlive(false);
+            return;
+        }
+        moveTo(targetX, targetY);
 
         travelDist_--;
     }
 }
 
 // *************************************
-// **************** ICE ****************
+// ************** TERRAIN **************
 // *************************************
 
-void Ice::init() {
+void Terrain::init() {
     setVisible(true);
 }
 
+// *************************************
+// **************** ICE ****************
+// *************************************
+
 void Ice::tick() {}
 
-void Ice::annoyed() {}
+// *************************************
+// ************** BOULDER **************
+// *************************************
+
+void Boulder::tick() {
+    if (isAlive() == false)
+        return;
+    switch (state_) {
+        case stable:
+            if (!getWorld()->getIceHolder()->isIceAt(getX(), getY() - 1, getX() + 3, getY() - 1, true))
+                state_ = waiting;
+            break;
+        case waiting:
+            if (cooldown_ > 0)
+                cooldown_--;
+            else
+            {
+                state_ = falling;
+                getWorld()->playSound(SOUND_FALLING_ROCK);
+            }
+            break;
+        case falling:
+            int targX = getX();
+            int targY = getY() - 1;
+            if (targY < 0 || getWorld()->getIceHolder()->isIceAt(targX, targY, targX + 3, targY, true)
+                || getWorld()->isActorNearby(IID_BOULDER, targX, targY + 1, 0.1, 3)) {
+                setAlive(false);
+                return;
+            }
+            else
+            {
+                getWorld()->damageNearbyProtesters(targX, targY, 3, 100);
+
+                Iceman* iceman = getWorld()->getIceman();
+                if (hypot(targX - iceman->getX(), targY - iceman->getY()) <= 3)
+                    iceman->subtractHP(100);
+            }
+            moveTo(targX, targY);
+            break;
+    }
+}
 
 // *************************************
 // *********** COLLECTABLE *************
@@ -260,36 +375,37 @@ void Ice::annoyed() {}
 
 void Collectable::tick() {
     if (isAlive()) {
-        if (!isVisible() && icemanWithinDist(4)) {
-            setVisible(true);
-            return;
-        } else if (icemanWithinDist(3)) {
-            activate();
-        }
+        if (isPickupable()) {
+            if (!isVisible() && getWorld()->icemanWithinDist(getX(), getY(), 4)) {
+                setVisible(true);
+                return;
+            }
+            else if (getWorld()->icemanWithinDist(getX(), getY(), 3)) {
+                activate();
+            }
 
-        // Remove collectable if lifetime runs out
-        if (lifetime_ > 0) {
-            lifetime_--;
-        } else if (lifetime_ == 0) {
-            setAlive(false);
+            // Remove collectable if lifetime runs out
+            if (lifetime_ > 0) {
+                lifetime_--;
+            }
+            else if (lifetime_ == 0) {
+                setAlive(false);
+            }
+        }
+        else
+        {
+            if (getWorld()->damageNearbyProtesters(getX(), getY(), 3, 0)) // 0 dmg to bribe
+                activate();
         }
     }
 }
 
-bool Collectable::icemanWithinDist(int numUnits) {
-    Actor* iceman = getWorld()->getIceman();
-
-    int icemanX = iceman->getX();
-    int icemanY = iceman->getY();
-
-    if (abs(getX() - icemanX) <= numUnits && abs(getY() - icemanY) <= numUnits)
-        return true;
-
-    return false;
-}
-
 void Collectable::setLifetime(int time) {
     lifetime_ = time;
+}
+
+bool Collectable::isPickupable() {
+    return pickupable_;
 }
 
 // *************************************
@@ -308,10 +424,38 @@ void OilBarrel::activate() {
 }
 
 // *************************************
+// ************ GOLD NUGGET ************
+// *************************************
+
+void GoldNugget::init() {
+    if (isPickupable()) {
+        setVisible(false);
+        setLifetime(-1);
+    }
+    else {
+        setVisible(true);
+        setLifetime(100);
+    }
+}
+
+void GoldNugget::activate() {
+    setAlive(false);
+    if (isPickupable()) {
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->increaseScore(10);
+        getWorld()->getIceman()->addGold();
+    }
+    else {
+        getWorld()->playSound(SOUND_PROTESTER_FOUND_GOLD);
+        getWorld()->increaseScore(25);
+    }
+}
+
+// *************************************
 // ************ WATER POOL *************
 // *************************************
 
-void WaterPool::init()  // Need to create common class (same code)
+void WaterPool::init()
 {
     setVisible(true);
     int current_level_num = getWorld()->getLevel();
@@ -329,7 +473,7 @@ void WaterPool::activate() {
 // ************* SONAR KIT *************
 // *************************************
 
-void SonarKit::init()  // Need to create common class (same code)
+void SonarKit::init()
 {
     setVisible(true);
     int current_level_num = getWorld()->getLevel();
